@@ -56,21 +56,24 @@ class Pymol
     IO.popen(pymol_cmd, 'w+') do |pipe|
       to_run = pymol_obj.cmds.map {|v| v + "\n" }.join
       pipe.puts to_run
-      pipe.close_write
       filesz = -1
-      loop do 
+      loop do
         sleep(min_sleep)
-        before_read_size = reply.size
-        reply << pipe.read
         if fl = opt[:sleep_til]
-          puts "LOOKING FOR #{fl}"
+          puts "LOOKING FOR #{fl}" if $VERBOSE
           if File.exist?(fl)
-            puts "EXISTS!"
             size = File.size(fl)
             break if size == filesz
             filesz = size  
           end
-        else
+        end
+      end
+      pipe.close_write
+      loop do 
+        sleep(min_sleep)
+        before_read_size = reply.size
+        reply << pipe.read
+                else
           break if reply.size == before_read_size
         end
       end
