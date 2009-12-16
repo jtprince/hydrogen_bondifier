@@ -1,3 +1,5 @@
+require 'pymol'
+require 'pymol/script'
 
 class Pymol
   EXCLUDE_WATER_FILTER = " &! resn hoh"
@@ -13,17 +15,17 @@ class Pymol
     def self.find_pairs(file, sel1, sel2, opt={})
       opt = DEFAULT_FIND_PAIRS_ARGS.merge( opt )
       exclude_water_command = opt[:exclude_water] ? EXCLUDE_WATER_FILTER : ""
-      hbond_script = HydrogenBondifier::PythonScript.list_hb(sel1, sel2)
+      hbond_script = Pymol::Script.list_hb(sel1, sel2)
       reply = Pymol.run(:msg => "getting hydrogen bonds", :script => hbond_script) do |pm|
         pm.cmd "load #{file}, mymodel"
         pm.cmd "list_hb mymodel#{exclude_water_command}, #{opt[:cutoff]}, #{opt[:angle]}"
       end
-      HydrogenBondifier::list_hb_parser(reply)
+      Pymol::Script.list_hb_parser(reply)
     end
 
     # expects that hydrogen bonds are already specified in the PDB file
     # returns an array triplet atom IDs [donor, hydrogen, acceptor]
-    def self.from_pdb(file, connection_pairs, sel_don=SELECT_O_N_donors, sel_acc=SELECT_O_N_acceptors, sel_h=SELECT_H, opt={})
+    def self.from_pdb(file, connection_pairs, opt={}, sel_don=SELECT_O_N_donors, sel_acc=SELECT_O_N_acceptors, sel_h=SELECT_H) 
       opt = DEFAULT_FIND_PAIRS_ARGS.merge(opt)
       connection_index = Hash.new {|h,k| h[k] = [] }
       connection_pairs.each do |pair|

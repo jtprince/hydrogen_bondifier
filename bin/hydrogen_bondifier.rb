@@ -17,6 +17,24 @@ require 'pymol/surface'
 require 'pymol/connections'
 
 
+def load_or_get(key, opt, as_yaml=true, dont_write=false, &block)
+  load_key = "load_#{key}".to_sym
+  write_key = "write_#{key}".to_sym
+  if lf = opt[load_key]
+    if as_yaml ; YAML.load_file(lf)
+    else ; lf
+    end
+  else
+    reply = block.call
+    if wf = opt[write_key]
+      File.open(wf, 'w') {|out| out.print reply.to_yaml } unless dont_write
+    end
+    reply
+  end
+end
+
+
+
 ft_postfix = {
   'surface' => '_surface.yml',
   'hbonds' => '_hbond_tmp.yml',
@@ -56,21 +74,6 @@ opts = OptionParser.new do |op|
 end
 opts.parse!
 
-def load_or_get(key, opts, as_yaml=true, dont_write=false, &block)
-  load_key = "load_#{key}".to_sym
-  write_key = "write_#{key}".to_sym
-  if lf = opt[load_key]
-    if as_yaml ; YAML.load_file(lf)
-    else ; lf
-    end
-  else
-    reply = block.call
-    if wf = opt[write_key]
-      File.open(wf, 'w') {|out| out.print reply.to_yaml } unless dont_write
-    end
-    reply
-  end
-end
 
 
 if ARGV.size == 0
@@ -83,37 +86,36 @@ ARGV.clear
 
 files.each do |file|
 
-  ft_desc.each do |st|
-    key = "write_#{st}".to_sym
-    if opt[key]
-      opt[key] = key
-    end
-  end
-
-
   # create filenames for output files
   base = file.chomp(File.extname(file))
+
+  ft_desc.keys.each do |st|
+    key = "write_#{st}".to_sym
+    if opt[key]
+      opt[key] = base + ft_postfix[st]
+    end
+  end
 
   final_output = base + output_postfix
 
   key = 'plus_h'
   plus_h_file = base + key + '.pdb'
-  pdb_file_plus_h = load_or_get('plus_h', opts, false, true) do
+  pdb_file_plus_h = load_or_get('plus_h', opt, false, true) do
     HydrogenBondifier.pdb_with_hbonds(file, plus_h_file)
   end
 
   base_added = pdb_file_plus_h.chomp(File.extname(pdb_file_plus_h))
 
-  connection_pairs = load_or_get('connections', opts, true) do 
+  connection_pairs = load_or_get('connections', opt, true) do 
     Pymol::Connections.from_pdb(pdb_file_plus_h)  
   end
 
-  hbonds = load_or_get('hbonds', opts, true) do
-    HydrogenBondifier.find_hbonds(pdb_file_plus_h, connection_pairs, opts)
+  hbonds = load_or_get('hbonds', opt, true) do
+    HydrogenBondifier.find_hbonds(pdb_file_plus_h, connection_pairs, opt)
   end
 
   # http://pymolwiki.org/index.php/Surface#Exporting_Surface.2FMesh_Coordinates_to_File
-  surface_coords = load_or_get('surface', opts, true) do
+  surface_coords = load_or_get('surface', opt, true) do
     Pymol::Surface.from_pdb(pdb_file_plus_h)
   end
 

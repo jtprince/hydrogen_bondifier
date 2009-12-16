@@ -1,7 +1,7 @@
 
 
-module HydrogenBondifier
-  module PythonScript
+class Pymol
+  module Script
 
     def self.all_connections
       %Q{
