@@ -26,7 +26,6 @@ describe 'basic tests' do
     File.size(newfile).is 468022
   end
 
-
   it 'can run commands and wait for stdout output' do
     reply = Pymol.run do |p|
       p.cmd "load #{@file}, mdl" 
