@@ -39,7 +39,7 @@ class Pymol
   end
 
   def self.run(opt={}, &block)
-    min_sleep = opt[:sleep] || 1
+    min_sleep = opt[:sleep_inc] || 1
     pymol_obj = self.new
     puts( "[working in pymol]: " + opt[:msg] + " ...") if (opt[:msg] && $VERBOSE)
 
@@ -52,37 +52,36 @@ class Pymol
     end
     pymol_cmd = "#{PYMOL_QUIET} #{cmd_trailer}"
     reply = ""
+    
     block.call(pymol_obj)
-    IO.popen(pymol_cmd, 'w+') do |pipe|
-      to_run = pymol_obj.cmds.map {|v| v + "\n" }.join
-      pipe.puts to_run
-      filesz = -1
-      loop do
-        sleep(min_sleep)
-        if fl = opt[:sleep_til]
-          puts "LOOKING FOR #{fl}" if $VERBOSE
-          if File.exist?(fl)
-            size = File.size(fl)
-            break if size == filesz
-            filesz = size  
-          end
+    to_run = pymol_obj.cmds.map {|v| v + "\n" }.join
+
+    reply = ""
+    Open3.popen3(pymol_cmd) do |stdin, stdout, stderr|
+      stdin.puts to_run
+
+      reply = ""
+      # await input for 0.5 seconds, will return nil and
+      # break the loop if there is nothing to read from stdout after 0.5s
+      while ready = IO.select([stdout], nil, nil, min_sleep)
+        if fl = opt[:til_file]
+          break if File.exist?(fl)
         end
-      end
-      pipe.close_write
-      loop do 
-        sleep(min_sleep)
-        before_read_size = reply.size
-        reply << pipe.read
-                else
-          break if reply.size == before_read_size
-        end
+        # read until the current pipe buffer is empty
+        begin
+          reply << stdout.read_nonblock(4096)
+        rescue Errno::EAGAIN
+          break unless opt[:til_file]
+        end while true
       end
     end
-    if scriptname
-      File.unlink(scriptname) if File.exist?(scriptname)
-    end
-    pymol_obj.cmds.clear
-    reply
+  end 
+
+  if scriptname
+    File.unlink(scriptname) if File.exist?(scriptname)
   end
+  pymol_obj.cmds.clear
+  reply
+end
 
 end
