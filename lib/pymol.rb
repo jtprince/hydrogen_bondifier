@@ -1,4 +1,6 @@
 
+require 'open3'
+
 class Pymol
 
   attr_accessor :cmds
@@ -61,27 +63,32 @@ class Pymol
       stdin.puts to_run
 
       reply = ""
-      # await input for 0.5 seconds, will return nil and
-      # break the loop if there is nothing to read from stdout after 0.5s
-      while ready = IO.select([stdout], nil, nil, min_sleep)
-        if fl = opt[:til_file]
+
+      if fl = opt[:til_file]
+        loop do
+          sleep(min_sleep)
+          reply << stdout.read(4096)
           break if File.exist?(fl)
         end
-        # read until the current pipe buffer is empty
-        begin
-          reply << stdout.read_nonblock(4096)
-        rescue Errno::EAGAIN
-          break unless opt[:til_file]
-        end while true
+      else
+        # await input for 0.5 seconds, will return nil and
+        # break the loop if there is nothing to read from stdout after 0.5s
+        while ready = IO.select([stdout], nil, nil, min_sleep)
+          # read until the current pipe buffer is empty
+          begin
+            reply << stdout.read_nonblock(4096)
+          rescue Errno::EAGAIN
+            break unless opt[:til_file]
+          end while true
+        end
       end
     end
-  end 
 
-  if scriptname
-    File.unlink(scriptname) if File.exist?(scriptname)
+    if scriptname
+      File.unlink(scriptname) if File.exist?(scriptname)
+    end
+    pymol_obj.cmds.clear
+    reply
   end
-  pymol_obj.cmds.clear
-  reply
-end
 
 end

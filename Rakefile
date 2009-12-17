@@ -47,6 +47,21 @@ Rake::RDocTask.new do |rdoc|
   rdoc.rdoc_files.include('lib/**/*.rb')
 end
 
+
+
+desc 'Run specs.'
+Rake::TestTask.new(:spec) do |t|
+  t.verbose = true
+  t.warning = true
+  ENV['RUBYOPT'] = 'rubygems'
+  ENV['TEST'] = ENV['SPEC'] if ENV['SPEC']
+  t.libs = ['lib']
+  t.test_files = Dir.glob( File.join('spec', ENV['pattern'] || '**/*_spec.rb') )
+  t.options = "-v"
+end
+
+
+
 task :default => :spec
 
 task :build => :gemspec
