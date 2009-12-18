@@ -1,12 +1,12 @@
 require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
-require 'fileutils'
 
+require 'fileutils'
 require 'pymol'
 
-describe 'basic tests' do
+describe 'pymol running basic tests' do
 
   before do
-    @file = '2pERK2_Hadded.pdb'
+    @file = 'little.pdb'
     origfile = TESTFILES + '/' + @file
     FileUtils.copy origfile, @file
   end
@@ -15,7 +15,7 @@ describe 'basic tests' do
     File.unlink @file if File.exist?(@file)
   end
 
-  it 'can run commands and wait for file to be written' do
+  it 'can run commands and wait for a file to be written' do
     newfile = @file + ".HADDED.pdb"
     reply = Pymol.run(:til_file => newfile, :sleep_inc => 1) do |p|
       p.cmd "load #{@file}, mdl" 
@@ -23,7 +23,7 @@ describe 'basic tests' do
       p.cmd "save #{newfile}"
     end
     ok File.exist?(newfile)
-    File.size(newfile).is 468022
+    File.size(newfile).is 17014
   end
 
   it 'can run commands and wait for stdout output' do
@@ -32,8 +32,7 @@ describe 'basic tests' do
       p.cmd "select mysel, mdl and elem o"
       p.cmd 'iterate mysel, print "GRAB: %s" % index'
     end
-    reply.split("\n").select {|line| line =~ /^GRAB: / }.size.is 530
+    reply.split("\n").select {|line| line =~ /^GRAB: / }.size.is 20
   end
-
 
 end

@@ -5,6 +5,10 @@ class Pymol
 
   attr_accessor :cmds
 
+  def self.run(opt={}, &block)
+    self.new.run(opt, &block)
+  end
+
   def initialize
     @cmds = [] 
   end
@@ -40,45 +44,63 @@ class Pymol
     abort "pymol not installed or can't find path, specify with --path-to-pymol" if !to_use
   end
 
-  def self.run(opt={}, &block)
+  def run(opt={}, &block)
     min_sleep = opt[:sleep_inc] || 1
-    pymol_obj = self.new
     puts( "[working in pymol]: " + opt[:msg] + " ...") if (opt[:msg] && $VERBOSE)
 
-    cmd_trailer = " -p"
-    if python_script = opt[:python_script]
+    if script = opt[:script]
       scriptname = "python_script_for_pymol.tmp"
       File.unlink(scriptname) if File.exist?(scriptname)
-      File.open(scriptname, 'w') {|out| out.print python_script }
-      cmd_trailer << " -r #{pythong_script}"
+      File.open(scriptname, 'w') {|out| out.print script }
     end
-    pymol_cmd = "#{PYMOL_QUIET} #{cmd_trailer}"
+    pymol_cmd = "#{PYMOL_QUIET} -p"
     reply = ""
+
+    block.call(self)
+    cmds_to_run = self.cmds.map
+    cmds_to_run.unshift( "run #{scriptname}" ) if script
+    to_run = cmds_to_run.map {|v| v + "\n" }.join
     
-    block.call(pymol_obj)
-    to_run = pymol_obj.cmds.map {|v| v + "\n" }.join
-
     reply = ""
-    Open3.popen3(pymol_cmd) do |stdin, stdout, stderr|
-      stdin.puts to_run
 
-      reply = ""
+    # I'm not happy about using two completely different IO methods with
+    # pymol, but each seems the solution that 'always' works for their
+    # problem.
 
-      if fl = opt[:til_file]
+    if til_file = opt[:til_file]
+      IO.popen(pymol_cmd, 'w+') do |pipe|
+        pipe.puts to_run
+        prev_file_size = -1
         loop do
           sleep(min_sleep)
-          reply << stdout.read(4096)
-          break if File.exist?(fl)
+          if File.exist?(til_file)
+            size = File.size(til_file)
+            break if size == prev_file_size
+            prev_file_size = size  
+          end
         end
-      else
+        pipe.close_write
+        loop do 
+          sleep(min_sleep)
+          before_read_size = reply.size
+          reply << pipe.read
+          break if reply.size == before_read_size
+        end
+      end
+    else
+      Open3.popen3(pymol_cmd) do |stdin, stdout, stderr|
+        stdin.puts to_run
+
+        reply = ""
+
         # await input for 0.5 seconds, will return nil and
         # break the loop if there is nothing to read from stdout after 0.5s
         while ready = IO.select([stdout], nil, nil, min_sleep)
           # read until the current pipe buffer is empty
           begin
-            reply << stdout.read_nonblock(4096)
+            reply << stdout.read_nonblock(32768)
           rescue Errno::EAGAIN
-            break unless opt[:til_file]
+            break 
           end while true
         end
       end
@@ -87,7 +109,7 @@ class Pymol
     if scriptname
       File.unlink(scriptname) if File.exist?(scriptname)
     end
-    pymol_obj.cmds.clear
+    self.cmds.clear
     reply
   end
 

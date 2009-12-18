@@ -1,13 +1,8 @@
+require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
-describe 'basic tests' do
+require 'hydrogen_bondifier'
+require 'fileutils'
 
-  before do
-    @file = TESTFILES + '/2pERK2_Hadded.pdb'
-    @pdb = Bio::PDB.new(IO.read(@file))
-  end
+xdescribe 'basic tests' do
 
-  it 'connects hydrogen to its proper atom' do
-    @atom.each do | 
-    hydro_name_to_connected_name
-  end
 end
