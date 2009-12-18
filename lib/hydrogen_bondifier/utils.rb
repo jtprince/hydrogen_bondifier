@@ -7,8 +7,8 @@ module Bio
       module_function
       # calculates the angle between 2 Narray vecs (in radians)
       def angle_between_vectors(vec1, vec2)
-        vec1 = NArray.to_na(vec1.to_a)
-        vec2 = NArray.to_na(vec2.to_a)
+        vec1 = NArray.to_na(vec1.to_a) unless vec1.is_a?(NArray)
+        vec2 = NArray.to_na(vec2.to_a) unless vec2.is_a?(NArray)
         nil_vec = NArray[0.0, 0.0, 0.0]
         return nil if (vec1 == nil_vec or vec2 == nil_vec)
         (mag_a, mag_b) = [vec1,vec2].map {|vec| Math::sqrt((vec*vec).sum) }

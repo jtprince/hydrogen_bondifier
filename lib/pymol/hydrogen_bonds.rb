@@ -16,7 +16,7 @@ class Pymol
 
     module_function
 
-    def pdb_with_hbonds(pdb_filename, newname=nil)
+    def pdb_with_hydrogens(pdb_filename, newname=nil)
       pfile = pdb_filename
       newname = pfile.chomp(File.extname(pfile)) + "_plus_h.pdb" unless newname
       Pymol.run(:msg => 'creating pdb with hydrogens') do |pm|
@@ -34,7 +34,7 @@ class Pymol
       hbond_script = Pymol::HydrogenBonds.list_hb_script(sel1, sel2)
       reply = Pymol.run(:msg => "getting hydrogen bonds", :script => hbond_script) do |pm|
         pm.cmd "load #{file}, mymodel"
-        pm.cmd "list_hb mymodel#{exclude_water_command}, #{opt[:max_dist]}, #{opt[:max_angle]}"
+        pm.cmd "list_hb mymodel#{exclude_water_command}, cutoff=#{opt[:max_dist]}, angle=#{opt[:max_angle]}"
       end
       Pymol::HydrogenBonds.list_hb_parser(reply)
     end
@@ -46,8 +46,11 @@ class Pymol
     # respects DEFAULT_FIND_PAIRS_OPTS and DEFAULT_H_BOND_OPTS
     # expects that hydrogen bonds are already specified in the PDB file
     # returns an array triplet atom IDs [donor, hydrogen, acceptor]
+    # :connections can be passed in (an array of arrays of all unique pairwise
+    # connections [by ID])
     def from_pdb(file, opt={})
       opt = DEFAULT_H_BOND_OPTS.merge(opt)
+
       pairs = find_pairs(file, opt[:select_donor], opt[:select_acceptor], opt)
 
       connection_pairs = Pymol::Connections.from_pdb(file)
@@ -65,8 +68,8 @@ class Pymol
         atom_index[atom.serial] = atom
       end
 
-      max_dist = opt[:max_dist] || DEFAULT_FIND_PAIRS_OPTS[:max_dist]
-      cutoff_in_radians = max_dist / 0.0174532925
+      max_angle = opt[:max_angle] || DEFAULT_FIND_PAIRS_OPTS[:max_angle]
+      cutoff_in_degress = max_angle
 
       hbonds = []
       pairs.each do |don_id, acc_id, don_to_acc_dist|
@@ -80,8 +83,10 @@ class Pymol
           next if hydrogen.element != 'H'
           angle = Bio::PDB::Utils.angle_from_coords([donor_xyz, hydrogen.xyz, acceptor_xyz])
           h_to_acc_dist = Bio::PDB::Utils.distance(hydrogen.xyz, acceptor_xyz)
-          if (Math::PI - angle) <= cutoff_in_radians
-            if angle <= cutoff_in_radians
+          # I'm not sure why the angle cutoff is not being respected, but we
+          # can enforce it right here since we want the angles anyway
+          if (180.0 - Bio::PDB::Utils.rad2deg(angle)) <= cutoff_in_degress
+            if angle <= cutoff_in_degress
               hbonds << [donor, hydrogen, acceptor, angle, don_to_acc_dist, h_to_acc_dist]
             end
           end
