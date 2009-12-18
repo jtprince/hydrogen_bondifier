@@ -107,7 +107,7 @@ class Pymol
     end
 
     if scriptname
-      File.unlink(scriptname) if File.exist?(scriptname)
+      #File.unlink(scriptname) if File.exist?(scriptname)
     end
     self.cmds.clear
     reply

@@ -8,7 +8,11 @@ class Pymol
   EXCLUDE_WATER_FILTER = " &! resn hoh"
   module HydrogenBonds
 
-    DEFAULT_FIND_PAIRS_ARGS = {:cutoff => 3.2, :angle => 55, :exclude_water => true }
+    DEFAULT_FIND_PAIRS_OPTS = {:max_dist => 3.2, :max_angle => 60, :exclude_water => true }
+    DEFAULT_H_BOND_OPTS = {
+      :select_donor => "and (elem n,o and (neighbor hydro))",
+      :select_acceptor => "and (elem o or (elem n and not (neighbor hydro)))",
+    }
 
     module_function
 
@@ -25,28 +29,27 @@ class Pymol
 
     # returns [id1, id2, distance] for each atom
     def find_pairs(file, sel1, sel2, opt={})
-      opt = DEFAULT_FIND_PAIRS_ARGS.merge( opt )
+      opt = DEFAULT_FIND_PAIRS_OPTS.merge( opt )
       exclude_water_command = opt[:exclude_water] ? EXCLUDE_WATER_FILTER : ""
       hbond_script = Pymol::HydrogenBonds.list_hb_script(sel1, sel2)
       reply = Pymol.run(:msg => "getting hydrogen bonds", :script => hbond_script) do |pm|
         pm.cmd "load #{file}, mymodel"
-        pm.cmd "list_hb mymodel#{exclude_water_command}, #{opt[:cutoff]}, #{opt[:angle]}"
+        pm.cmd "list_hb mymodel#{exclude_water_command}, #{opt[:max_dist]}, #{opt[:max_angle]}"
       end
       Pymol::HydrogenBonds.list_hb_parser(reply)
     end
 
-    DEFAULT_H_BOND_OPTS = {
-      :select_donor => "and (elem n,o and (neighbor hydro))",
-      :select_acceptor => "and (elem o or (elem n and not (neighbor hydro)))",
-    }
 
-    # respects DEFAULT_FIND_PAIRS_ARGS and DEFAULT_H_BOND_OPTS
+    # returns [donor, hydrogen, acceptor, angle, don_to_acc_dist,
+    # h_to_acc_dist]
+    # The first three are Bio::PDB::Record::ATOM structs.
+    # respects DEFAULT_FIND_PAIRS_OPTS and DEFAULT_H_BOND_OPTS
     # expects that hydrogen bonds are already specified in the PDB file
     # returns an array triplet atom IDs [donor, hydrogen, acceptor]
     def from_pdb(file, opt={})
+      opt = DEFAULT_H_BOND_OPTS.merge(opt)
       pairs = find_pairs(file, opt[:select_donor], opt[:select_acceptor], opt)
 
-      opt = DEFAULT_H_BOND_OPTS.merge(opt)
       connection_pairs = Pymol::Connections.from_pdb(file)
       connection_index = Hash.new {|h,k| h[k] = [] }
       connection_pairs.each do |pair|
@@ -62,27 +65,25 @@ class Pymol
         atom_index[atom.serial] = atom
       end
 
-      cutoff = opt[:cutoff] || DEFAULT_FIND_PAIRS_ARGS[:cutoff]
-      cutoff_in_radians = cutoff / 0.0174532925
+      max_dist = opt[:max_dist] || DEFAULT_FIND_PAIRS_OPTS[:max_dist]
+      cutoff_in_radians = max_dist / 0.0174532925
 
       hbonds = []
       pairs.each do |don_id, acc_id, don_to_acc_dist|
-        acceptor = atom_index[acc_id]  
-        next if acceptor.element == 'H'
-        acceptor_xyz = acceptor.xyz
         donor = atom_index[don_id]
-        puts "NOT RIGHT:#{donor.inspect} " if donor.element != 'N' || donor.element != 'O'
-       
+        acceptor = atom_index[acc_id]  
+        next if (acceptor.element == 'H' or donor.element == 'H') # check for sloppy queries
+        acceptor_xyz = acceptor.xyz
         donor_xyz = donor.xyz
         connection_index[don_id].each do |id|
           hydrogen = atom_index[id]
           next if hydrogen.element != 'H'
           angle = Bio::PDB::Utils.angle_from_coords([donor_xyz, hydrogen.xyz, acceptor_xyz])
           h_to_acc_dist = Bio::PDB::Utils.distance(hydrogen.xyz, acceptor_xyz)
-          #if (Math::PI - angle) <= cutoff_in_radians
-          p angle
-          if angle <= cutoff_in_radians
-            hbonds << [donor, hydrogen, acceptor, angle, don_to_acc_dist, h_to_acc_dist]
+          if (Math::PI - angle) <= cutoff_in_radians
+            if angle <= cutoff_in_radians
+              hbonds << [donor, hydrogen, acceptor, angle, don_to_acc_dist, h_to_acc_dist]
+            end
           end
         end
       end
