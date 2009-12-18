@@ -32,6 +32,7 @@ class Pymol
       opt = DEFAULT_FIND_PAIRS_OPTS.merge( opt )
       exclude_water_command = opt[:exclude_water] ? EXCLUDE_WATER_FILTER : ""
       hbond_script = Pymol::HydrogenBonds.list_hb_script(sel1, sel2)
+      puts hbond_script
       reply = Pymol.run(:msg => "getting hydrogen bonds", :script => hbond_script) do |pm|
         pm.cmd "load #{file}, mymodel"
         pm.cmd "list_hb mymodel#{exclude_water_command}, cutoff=#{opt[:max_dist]}, angle=#{opt[:max_angle]}"
@@ -51,6 +52,7 @@ class Pymol
       opt = DEFAULT_H_BOND_OPTS.merge(opt)
 
       pairs = find_pairs(file, opt[:select_donor], opt[:select_acceptor], opt)
+      p pairs.first
 
       connection_pairs = Pymol::Connections.from_pdb(file)
       connection_index = Hash.new {|h,k| h[k] = [] }
@@ -71,6 +73,7 @@ class Pymol
       cutoff_in_degress = max_angle
 
       hbonds = []
+      puts "calculating angles and distances" if $VERBOSE
       pairs.each do |don_id, acc_id, don_to_acc_dist|
         donor = atom_index[don_id]
         acceptor = atom_index[acc_id]  
@@ -80,14 +83,23 @@ class Pymol
         connection_index[don_id].each do |id|
           hydrogen = atom_index[id]
           next if hydrogen.element != 'H'
+
+          puts "ACCEPT ID: "
+          puts acc_id
+          p acceptor_xyz
+          puts "HYDRO ID: "
+          p id
+          p hydrogen.xyz
           angle = Bio::PDB::Utils.angle_from_coords([donor_xyz, hydrogen.xyz, acceptor_xyz])
           h_to_acc_dist = Bio::PDB::Utils.distance(hydrogen.xyz, acceptor_xyz)
+          puts "DISTANCES: "
+          p don_to_acc_dist
+          p h_to_acc_dist
+           abort 'here'
           # I'm not sure why the angle cutoff is not being respected, but we
           # can enforce it right here since we want the angles anyway
           if (180.0 - Bio::PDB::Utils.rad2deg(angle)) <= cutoff_in_degress
-            if angle <= cutoff_in_degress
-              hbonds << [donor, hydrogen, acceptor, angle, don_to_acc_dist, h_to_acc_dist]
-            end
+            hbonds << [donor, hydrogen, acceptor, angle, don_to_acc_dist, h_to_acc_dist]
           end
         end
       end

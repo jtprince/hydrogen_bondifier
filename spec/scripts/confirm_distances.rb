@@ -42,6 +42,9 @@ my_pairs.each do |i, dist|
   end
 end
 
+p x
+p y
+
 intersection = x.size
 my_hbond_count = my_pairs.size
 their_hbond_count = their_index.size
