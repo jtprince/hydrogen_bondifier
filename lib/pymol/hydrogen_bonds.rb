@@ -40,8 +40,7 @@ class Pymol
     end
 
 
-    # returns [donor, hydrogen, acceptor, angle, don_to_acc_dist,
-    # h_to_acc_dist]
+    # returns [donor, hydrogen, acceptor, angle, don_to_acc_dist, h_to_acc_dist]
     # The first three are Bio::PDB::Record::ATOM structs.
     # respects DEFAULT_FIND_PAIRS_OPTS and DEFAULT_H_BOND_OPTS
     # expects that hydrogen bonds are already specified in the PDB file
