@@ -31,7 +31,7 @@ lines.shift
 
 my_pairs = lines.map do |line|
   pieces = line.split(',')
-  [pieces[1].to_i, pieces[12].to_f]
+  [pieces[4].to_i, pieces[12].to_f]
 end
 
 x = [] ; y = []
@@ -41,9 +41,6 @@ my_pairs.each do |i, dist|
     y << their_index[i]
   end
 end
-
-p x
-p y
 
 intersection = x.size
 my_hbond_count = my_pairs.size

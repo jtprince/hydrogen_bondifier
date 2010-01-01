@@ -56,6 +56,9 @@ class Pymol
     pymol_cmd = "#{PYMOL_QUIET} -p"
     reply = ""
 
+    puts "ACTUALLY RUNNING:"
+    puts IO.read(scriptname) if scriptname
+
     block.call(self)
     cmds_to_run = self.cmds.map
     cmds_to_run.unshift( "run #{scriptname}" ) if script

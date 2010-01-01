@@ -29,6 +29,9 @@ class Pymol
 
     # returns [id1, id2, distance] for each atom
     def find_pairs(file, sel1, sel2, opt={})
+      puts "THE SELECTIONS"
+      p sel1
+      p sel2
       opt = DEFAULT_FIND_PAIRS_OPTS.merge( opt )
       exclude_water_command = opt[:exclude_water] ? EXCLUDE_WATER_FILTER : ""
       hbond_script = Pymol::HydrogenBonds.list_hb_script(sel1, sel2)
@@ -84,18 +87,21 @@ class Pymol
           hydrogen = atom_index[id]
           next if hydrogen.element != 'H'
 
-          puts "ACCEPT ID: "
-          puts acc_id
-          p acceptor_xyz
-          puts "HYDRO ID: "
-          p id
-          p hydrogen.xyz
+          #puts "ACCEPT ID: "
+          #puts acc_id
+          #p acceptor_xyz
+          #puts "HYDRO ID: "
+          #p id
+          #p hydrogen.xyz
+
           angle = Bio::PDB::Utils.angle_from_coords([donor_xyz, hydrogen.xyz, acceptor_xyz])
           h_to_acc_dist = Bio::PDB::Utils.distance(hydrogen.xyz, acceptor_xyz)
-          puts "DISTANCES: "
-          p don_to_acc_dist
-          p h_to_acc_dist
-           abort 'here'
+
+          #puts "DISTANCES: "
+          #p don_to_acc_dist
+          #p h_to_acc_dist
+          # abort 'here'
+          
           # I'm not sure why the angle cutoff is not being respected, but we
           # can enforce it right here since we want the angles anyway
           if (180.0 - Bio::PDB::Utils.rad2deg(angle)) <= cutoff_in_degress
@@ -107,6 +113,9 @@ class Pymol
     end
 
     def list_hb_script(select1, select2)
+      puts "INSIDE SCRIPT"
+      p select1
+      p select2
       %Q{
 # modified by JTP from here:
 # Dr. Robert L. Campbell

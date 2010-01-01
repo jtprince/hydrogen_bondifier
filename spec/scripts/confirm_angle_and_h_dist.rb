@@ -23,9 +23,8 @@ lines.shift
 my_angle_dist_by_res_and_name = {}
 lines.each do |line|
   pieces = line.split(',')
-  key = [pieces[1], pieces[5], pieces[7], pieces[9]]
-  p key
-  my_angle_dist_by_res_and_name[key] = [pieces[11].to_f, pieces[13].to_f]
+  key = [pieces[5], pieces[3], pieces[8], pieces[9]]
+  my_angle_dist_by_res_and_name[key] = [pieces[10].to_f, pieces[12].to_f]
 end
 # ["22", "HE", "42", "OD1"] == ["22", "HE", "42", "OD1"]
 #["43", "1HD2", "24", "OG1"]
@@ -57,23 +56,16 @@ res_to_vals = {}
 lines.each do |v| 
   pieces = v.chomp.split(/\s+/)
   key = pieces[0].split(':')[1,2].push(*(pieces[1].split(':')[1,2]))
-  ## 1HH1
-  ## f
-
-  p key
-  # 2 = distance
-  # 3 = angle
-
+  key[1] = key[1].sub(/^HN/,'H').sub(/^(\w+\d?)(\d)$/) {|md| $2 + $1 }
   res_to_vals[key] = [pieces[3].to_f, pieces[2].to_f]
 end
-abort 'here'
 
 a_x = []
 a_y = []
 d_x = []
 d_y = []
-my_angle_dist_by_res_and_name.each do |id, angle, dist|
-  p id
+my_angle_dist_by_res_and_name.each do |id, angle_dist|
+  (angle, dist) = angle_dist
   (o_angle, o_dist) = res_to_vals[id]
   if o_angle && o_dist
     a_x << angle 
@@ -82,6 +74,9 @@ my_angle_dist_by_res_and_name.each do |id, angle, dist|
     d_y << o_dist
   end
 end
+puts "EXAMINE"
+p a_x
+p a_y
 
 intersection = a_x.size
 my_hbond_count = my_angle_dist_by_res_and_name.size
@@ -104,7 +99,7 @@ Gnuplot.open do |gp|
     plot.data << Gnuplot::DataSet.new( [a_x, a_y] ) do |ds|
       ds.title = "RSQ=#{a_rsi[0]} SLOPE=#{a_rsi[1]} INT=#{a_rsi[2]}"
     end
-    plot.data << Gnuplot::DataSet.new( [[0,180], [0,180]] ) do |ds|
+    plot.data << Gnuplot::DataSet.new( [[118,180], [118,180]] ) do |ds|
       ds.with = "lines"
       ds.title = "perfect"
     end
@@ -122,7 +117,7 @@ Gnuplot.open do |gp|
     plot.data << Gnuplot::DataSet.new( [d_x, d_y] ) do |ds|
       ds.title = "RSQ=#{d_rsi[0]} SLOPE=#{d_rsi[1]} INT=#{d_rsi[2]}"
     end
-    plot.data << Gnuplot::DataSet.new( [[0,7], [0,7]] ) do |ds|
+    plot.data << Gnuplot::DataSet.new( [[1,3], [1,3]] ) do |ds|
       ds.with = "lines"
       ds.title = "perfect"
     end

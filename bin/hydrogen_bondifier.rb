@@ -58,7 +58,7 @@ end
 files = ARGV.map
 ARGV.clear
 
-categories = %w(D_id H_id A_id D_res D_res_id D_name A_res A_res_id A_name angle D_A_dist H_A_dist H_dist_to_surf)
+categories = %w(D_id H_id A_id H_name D_res D_res_id D_name A_res A_res_id A_name angle D_A_dist H_A_dist H_dist_to_surf)
 
 files.each do |file|
   
@@ -100,6 +100,7 @@ files.each do |file|
   which_atom = 1
 
   putsv "calculating distances to surface ..."
+  # also we are gathering all the data we need.
   characterized = hbond_arrays.map do |data|
     coords = Array.new(3)
     na_coords = Array.new(3)
@@ -113,10 +114,9 @@ files.each do |file|
     data[3] = Bio::PDB::Utils.rad2deg(data[3]) unless opt[:radians]
     ids = data[0,3].map {|atom| atom.serial }
     (don, acc) = [data[0], data[2]].map {|at| [at.resName, at.residue.id, at.name] }
+    ids.push(data[1].name)
     id_part = ids.push(*don).push(*acc)
-    closer = id_part.push(*(data[3,3]))
-    p closer
-    abort
+    id_part.push(*(data[3,3]))
     id_part.push(dists_to_surface.min)
   end
 
