@@ -66,6 +66,9 @@ Some methods have been completely wrapped in a script and parser to deliver desi
 
 == Warnings
 
+    A little tweaking was required to get robust output.  The variable 
+    Pymol.run(:sleep_inc => 1)
+
     
      
     
