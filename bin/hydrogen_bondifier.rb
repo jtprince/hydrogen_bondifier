@@ -12,7 +12,7 @@ require 'optparse'
 require 'bio/db/pdb'
 require 'pymol/surface'
 require 'pymol/connections'
-require 'hydrogen_bondifier'
+require 'pymol/hydrogen_bonds'
 require 'hydrogen_bondifier/utils'
 
 def putsv(*args)
@@ -35,11 +35,16 @@ opts = OptionParser.new do |op|
   op.banner = "usage: #{File.basename(__FILE__)} <file>.pdb ..."
   op.separator "outputs: <file>#{output_postfix}"
   op.separator " "
+  op.separator "cutoffs: "
   op.on("-d", "--max-distance <#{opt[:max_dist]}>", Float, "max distance between donor and acceptor") {|v| opt[:max_dist] = v }
   op.on("-a", "--max-angle <#{opt[:max_angle]}>", Float, "max angle in degrees") {|v| opt[:max_angle] = v }
+
+  op.separator " "
+  op.separator "options: "
   op.on("--radians", "output angles in radians") {|v| opt[:radians] = v }
   op.on("--no-exclude-water", "leaves water molecules in the model") {|v| opt[:exclude_water] = false }
   op.on("--no-add-hydrogen", "can use if pdb contains all hydrogens") {|v| opt[:add_hydrogen] = false }
+  op.on("--aa-to-surf", "outputs min dist to surface for amino acids") {|v| opt[:aa_to_surf] = v }
   op.on("-q", "--quiet", "no unnecessary output") {|v| $VERBOSE = false }
   op.separator " "
   op.separator "    * if pymol executable cannot be found, you can specify it as the value of the" 
@@ -98,6 +103,29 @@ files.each do |file|
   # 1 => hydrogen
   # 2 => acceptor
   which_atom = 1
+
+  # just output distance to the surface of the amino acid
+  if opt[:aa_to_surf]
+    amino_acids = []
+    hbond_arrays.each do |a,b,c|
+      [a,c].each {|atom| amino_acids << atom.residue }
+    end
+    amino_acids.uniq.each do |res|
+
+      #### CENTER OF GRAVITY
+      #coord = res.centreOfGravity
+      #### GEOMETRIC CENTER
+      #coord = res.geometricCentre
+      #min_dist = Bio::PDB::Utils.distance_to_many(coord, [xs, ys, zs] ).min
+
+      #### MINIMUM DISTANCE TO ANY ATOM
+      min_dist = res.atoms.map {|atom| Bio::PDB::Utils.distance_to_many(atom.xyz, [xs, ys, zs] ).min }.min
+      # output to mimic older output
+      puts "#{res.resName}#{res.id} minimum_distance_to_surface #{min_dist}"
+    end
+
+    next
+  end
 
   putsv "calculating distances to surface ..."
   # also we are gathering all the data we need.
