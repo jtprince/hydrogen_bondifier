@@ -1,0 +1,71 @@
+= HydrogenBondifier
+
+Provides a scriptable interface to pymol, a few basic commands for structure information, and an executable for determining hydrogen bond characteristics as would be useful to those doing hydrogen exchange experiments.
+
+== Examples
+
+=== Pymol Interface
+
+I've had some trouble getting all output from pymol before it quits.  The :til_file option will keep pymol open until the file exists and stops growing in size.
+
+    outfile = "file_with_h_added.pdb"
+    Pymol.run(:til_file => outfile) do |pm|
+      pm.cmd "load file.pdb, mymodel"
+      pm.cmd "h_add"
+      pm.cmd "save #{outfile}"
+    end
+
+The real power lies in scripting pymol.  Here's an example of extracting out all connections in a model:
+
+    # this script causes pymol to output all atom connections
+    cnx_script = %Q{
+
+    from pymol import cmd
+
+    def all_connections(selection):
+      """
+      USAGE
+
+      all_connections selection
+
+      returns lines: "CONNECTION: id - id"
+      """
+      stored.xs = []
+      cmd.iterate(selection, 'stored.xs.append( index )')
+      for i in stored.xs:
+        selName = "neighbor%s" % i
+        ids = cmd.select(selName, ("%s and neighbor id %s" % (selection, i)))
+        base = "CONNECTION: %s - " % i 
+        to_print = base + "%s"
+        print_string = 'print "' + to_print + '" % index'
+        cmd.iterate(selName, print_string )
+
+    cmd.extend("all_connections", all_connections)
+    }
+    output = Pymol.run(:script => cnx_script) do |pm|
+      pm.cmd "load file.pdb, mymodel"
+      pm.cmd "all_connections mymodel"
+    end
+
+    # now we just parse the output
+    values_of_output_lines = output.map {|line| line.match(/^CONNECTION: (.*)/)[1] }.compact
+    
+    connection_pairs = values_of_output_lines.map do |v| 
+      v.split(' - ').map {|v| v.to_i }.sort
+    end.uniq
+
+=== Basic methods
+
+Some methods have been completely wrapped in a script and parser to deliver desired output:
+
+    # all atomic pairs as atom ids
+    connections = Pymol::Connections.from_pdb("file.pdb")
+
+    # coordinates of the molecules surface
+    surface_coords = Pymol::Surface.from_pdb("file.pdb")
+
+== Warnings
+
+    
+     
+    
