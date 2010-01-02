@@ -29,13 +29,9 @@ class Pymol
 
     # returns [id1, id2, distance] for each atom
     def find_pairs(file, sel1, sel2, opt={})
-      puts "THE SELECTIONS"
-      p sel1
-      p sel2
       opt = DEFAULT_FIND_PAIRS_OPTS.merge( opt )
       exclude_water_command = opt[:exclude_water] ? EXCLUDE_WATER_FILTER : ""
       hbond_script = Pymol::HydrogenBonds.list_hb_script(sel1, sel2)
-      puts hbond_script
       reply = Pymol.run(:msg => "getting hydrogen bonds", :script => hbond_script) do |pm|
         pm.cmd "load #{file}, mymodel"
         pm.cmd "list_hb mymodel#{exclude_water_command}, cutoff=#{opt[:max_dist]}, angle=#{opt[:max_angle]}"
@@ -55,7 +51,6 @@ class Pymol
       opt = DEFAULT_H_BOND_OPTS.merge(opt)
 
       pairs = find_pairs(file, opt[:select_donor], opt[:select_acceptor], opt)
-      p pairs.first
 
       connection_pairs = Pymol::Connections.from_pdb(file)
       connection_index = Hash.new {|h,k| h[k] = [] }
@@ -113,9 +108,6 @@ class Pymol
     end
 
     def list_hb_script(select1, select2)
-      puts "INSIDE SCRIPT"
-      p select1
-      p select2
       %Q{
 # modified by JTP from here:
 # Dr. Robert L. Campbell
