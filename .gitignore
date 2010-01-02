@@ -1,2 +1,3 @@
 .*.swp
-./*.pdb
+*.gemspec
+pkg
