@@ -67,44 +67,46 @@ class Pymol
     # pymol, but each seems the solution that 'always' works for their
     # problem.
 
-    if til_file = opt[:til_file]
-      IO.popen(pymol_cmd, 'w+') do |pipe|
-        pipe.puts to_run
-        prev_file_size = -1
-        loop do
-          sleep(min_sleep)
+    til_file = opt[:til_file]
+    IO.popen(pymol_cmd, 'w+') do |pipe|
+      pipe.puts to_run
+      prev_file_size = -1
+      loop do
+        sleep(min_sleep)
+        if til_file
           if File.exist?(til_file)
             size = File.size(til_file)
             break if size == prev_file_size
             prev_file_size = size  
           end
-        end
-        pipe.close_write
-        loop do 
-          sleep(min_sleep)
-          before_read_size = reply.size
-          reply << pipe.read
-          break if reply.size == before_read_size
+        else
+          sleep 7
+          break
         end
       end
-    else
-      Open3.popen3(pymol_cmd) do |stdin, stdout, stderr|
-        stdin.puts to_run
-
-        reply = ""
-
-        # await input for 0.5 seconds, will return nil and
-        # break the loop if there is nothing to read from stdout after 0.5s
-        while ready = IO.select([stdout], nil, nil, min_sleep)
-          # read until the current pipe buffer is empty
-          begin
-            reply << stdout.read_nonblock(32768)
-          rescue Errno::EAGAIN
-            break 
-          end while true
-        end
+      pipe.close_write
+      loop do 
+        sleep(min_sleep)
+        before_read_size = reply.size
+        reply << pipe.read
+        break if reply.size == before_read_size
       end
     end
+  #Open3.popen3(pymol_cmd) do |stdin, stdout, stderr|
+  #stdin.puts to_run
+
+    #reply = ""
+
+    ## await input for 0.5 seconds, will return nil and
+    ## break the loop if there is nothing to read from stdout after 0.5s
+    #while ready = IO.select([stdout], nil, nil, min_sleep)
+    ## read until the current pipe buffer is empty
+    #begin
+    #reply << stdout.read_nonblock(32768)
+    #rescue Errno::EAGAIN
+    #break 
+    #end while true
+    #end
 
     if scriptname
       File.unlink(scriptname) if File.exist?(scriptname)
