@@ -101,6 +101,7 @@ end
 
 
 
+=begin
 
 cmd = 'pymol -cq -p'
 
@@ -121,3 +122,4 @@ p my_string.size
 
 
 
+=end
