@@ -24,6 +24,10 @@ class Pymol
     @cmds << string
   end
 
+  def tmp_file(base, postfix)
+    [base, $$, Time.now.to_f].join('-') << postfix
+  end
+
   # you can add your path to pymol to this array if you need to 
   # or with a commandline flag
   PYMOL_EXE_TO_TRY = ['PyMOL.exe', 'pymol']
@@ -60,31 +64,28 @@ class Pymol
 
     tmpfiles = []
     if script = opt[:script]
-      script_tmpf = Tempfile.new( [TMP_PYTHON_SCRIPT_FILENAME, '.py'], Dir.pwd)
-      script_tmpfn = script_tmpf.path
+      script_tmpfn = tmp_file TMP_PYTHON_SCRIPT_FILENAME, PYTHON_SCRIPT_POSTFIX
       File.open(script_tmpfn, 'w') {|out| out.print script }
-      tmpfiles << script_tmpf
+      tmpfiles << script_tmpfn
       cmds_to_run.unshift( "run #{script_tmpfn}" )
     end
 
     to_run = cmds_to_run.map {|v| v + "\n" }.join
 
-    pymol_tmpf = Tempfile.new([TMP_PYMOL_SCRIPT_FILENAME, PYMOL_SCRIPT_POSTFIX], Dir.pwd)
-    pymol_tmpfn = pymol_tmpf.path
+    pymol_tmpfn = tmp_file TMP_PYMOL_SCRIPT_FILENAME, PYMOL_SCRIPT_POSTFIX
     File.open(pymol_tmpfn, 'w') {|out| out.print to_run }
-    tmpfiles << pymol_tmpf
+    tmpfiles << pymol_tmpfn
 
     # much more suave to open a pipe, but python does not play well with pipes
     # and this is *MUCH* more compatible with windows
-    pymol_reply_tmpf = Tempfile.new([TMP_PYMOL_REPLY_FILENAME, '.pmolreply'], Dir.pwd)
-    tmpfiles << pymol_reply_tmpf
-    pymol_reply_tmpfn = pymol_reply_tmpf.path
-    system_cmd = "#{PYMOL_QUIET} #{pymol_tmpfn} > #{File.basename(pymol_reply_tmpfn)}"
+    pymol_reply_tmpfn = tmp_file TMP_PYMOL_REPLY_FILENAME, '.pmolreply'
+    tmpfiles << pymol_reply_tmpfn
+    system_cmd = "#{PYMOL_QUIET} #{pymol_tmpfn} > #{pymol_reply_tmpfn}"
     system system_cmd
 
     reply = IO.read(pymol_reply_tmpfn)
     
-    tmpfiles.each {|tmpf| tmpf.close(true) }  # unlinks it too
+    tmpfiles.each {|tmpf| File.unlink tmpf } 
     self.cmds.clear
     reply
   end
