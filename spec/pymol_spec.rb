@@ -24,7 +24,8 @@ describe 'pymol running basic tests' do
       p.cmd "save #{newfile}"
     end
     ok File.exist?(newfile)
-    File.size(newfile).is 17014
+    fs = File.size(newfile)
+    ok ((fs == 17014) or (fs == 16805))  # linux / windows filesizes
     File.unlink(newfile) if File.exist?(newfile)
   end
 
