@@ -6,10 +6,8 @@ Provides a scriptable interface to pymol, a few basic commands for structure inf
 
 === Pymol Interface
 
-I've had some trouble getting all output from pymol before it quits.  The :til_file option will keep pymol open until the file exists and stops growing in size.
-
     outfile = "file_with_h_added.pdb"
-    Pymol.run(:til_file => outfile) do |pm|
+    Pymol.run do |pm|
       pm.cmd "load file.pdb, mymodel"
       pm.cmd "h_add"
       pm.cmd "save #{outfile}"
@@ -64,8 +62,6 @@ Some methods have been completely wrapped in a script and parser to deliver desi
     # coordinates of the molecules surface
     surface_coords = Pymol::Surface.from_pdb("file.pdb")
 
-== Warnings
+== Copyright
 
-    A little tweaking was required to get robust output.  The variable
-    Pymol.run(:sleep_inc => 1) is the one to adjust if you notice anything
-    funny happening.
+See LICENSE

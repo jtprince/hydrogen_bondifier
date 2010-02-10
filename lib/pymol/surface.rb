@@ -21,7 +21,7 @@ class Pymol
     # http://pymolwiki.org/index.php/Surface#Exporting_Surface.2FMesh_Coordinates_to_File
     def from_pdb(file, postfix = "_surface.obj", delete_tmp=true)
       outfile = file.chomp(File.extname(file)) + postfix
-      Pymol.run(:msg => 'creating surface', :script => Pymol::Orientation.orient_to_pdb_coords_script, :til_file => outfile) do |pm|
+      Pymol.run(:msg => 'creating surface', :script => Pymol::Orientation.orient_to_pdb_coords_script) do |pm|
         pm.cmd "load #{file}, mymodel"
         pm.cmd "orient_to_pdb_coords"
         pm.cmd "show surface, mymodel"

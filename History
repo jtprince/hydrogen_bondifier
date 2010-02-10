@@ -1,0 +1,9 @@
+== 0.0.2
+
+* switched to system calls using temp files.  Note that Tempfiles on windows do not work at least the way I am trying to use them.
+
+== 0.0.1
+
+* using pipes
+
+
