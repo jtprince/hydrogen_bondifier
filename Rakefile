@@ -3,7 +3,7 @@ require 'rubygems'
 require 'rake'
 require 'jeweler'
 require 'rake/testtask'
-require 'rcov/rcovtask'
+# require 'rcov/rcovtask'
 
 NAME = "hydrogen_bondifier"
 WEBSITE_BASE = "website"
@@ -31,11 +31,11 @@ Rake::TestTask.new(:spec) do |spec|
   spec.verbose = true
 end
 
-Rcov::RcovTask.new do |spec|
-  spec.libs << 'spec'
-  spec.pattern = 'spec/**/*_spec.rb'
-  spec.verbose = true
-end
+#Rcov::RcovTask.new do |spec|
+#  spec.libs << 'spec'
+#  spec.pattern = 'spec/**/*_spec.rb'
+#  spec.verbose = true
+#end
 
 require 'rake/rdoctask'
 Rake::RDocTask.new do |rdoc|

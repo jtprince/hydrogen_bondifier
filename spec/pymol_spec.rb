@@ -17,8 +17,8 @@ describe 'pymol running basic tests' do
   end
 
   it 'can run commands and wait for a file to be written' do
-    newfile = @file + ".HADDED.pdb"
-    reply = Pymol.run(:til_file => newfile, :sleep_inc => 1) do |p|
+    newfile = @file.sub(/\.pdb/i, ".HADDED.pdb")
+    reply = Pymol.run do |p|
       p.cmd "load #{@file}, mdl" 
       p.cmd "h_add"
       p.cmd "save #{newfile}"
