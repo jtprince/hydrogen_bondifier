@@ -6,6 +6,7 @@
 # see this on hydrogen bond finding in pymol:
 # http://www.mail-archive.com/pymol-users@lists.sourceforge.net/msg06680.html
 
+
 require 'yaml'
 require 'narray'
 require 'optparse'
@@ -60,13 +61,12 @@ if ARGV.size == 0
   exit
 end
 
-files = ARGV.map
+files = ARGV.dup
 ARGV.clear
 
 categories = %w(D_id H_id A_id H_name D_res D_res_id D_name A_res A_res_id A_name angle D_A_dist H_A_dist H_dist_to_surf)
 
 files.each do |file|
-  
   ####################
   # need to implement copying of file, etc......
   ####################

@@ -60,7 +60,7 @@ class Pymol
 
     block.call(self)
 
-    cmds_to_run = self.cmds.map
+    cmds_to_run = self.cmds.dup
 
     tmpfiles = []
     if script = opt[:script]

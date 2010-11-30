@@ -13,7 +13,6 @@ describe 'pymol running basic tests' do
 
   after do
     File.unlink @file if File.exist?(@file)
-    File.unlink @file if File.exist?(@file)
   end
 
   it 'can run commands and wait for a file to be written' do

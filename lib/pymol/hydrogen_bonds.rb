@@ -62,11 +62,16 @@ class Pymol
       # make an index of the atoms
       pdb = Bio::PDB.new(IO.read(file)) 
       pdb.extend(Bio::PDB::AtomFinder)
+      pdb.extend(Bio::PDB::HetatmFinder)
+
       atom_index = []
       pdb.each_atom do |atom|
         atom_index[atom.serial] = atom
       end
-
+      pdb.each_hetatm do |atom|
+        atom_index[atom.serial] = atom
+      end
+      
       max_angle = opt[:max_angle] || DEFAULT_FIND_PAIRS_OPTS[:max_angle]
       cutoff_in_degress = max_angle
 
@@ -74,7 +79,7 @@ class Pymol
       puts "calculating angles and distances" if $VERBOSE
       pairs.each do |don_id, acc_id, don_to_acc_dist|
         donor = atom_index[don_id]
-        acceptor = atom_index[acc_id]  
+        acceptor = atom_index[acc_id]
         next if (acceptor.element == 'H' or donor.element == 'H') # check for sloppy queries
         acceptor_xyz = acceptor.xyz
         donor_xyz = donor.xyz
@@ -82,21 +87,9 @@ class Pymol
           hydrogen = atom_index[id]
           next if hydrogen.element != 'H'
 
-          #puts "ACCEPT ID: "
-          #puts acc_id
-          #p acceptor_xyz
-          #puts "HYDRO ID: "
-          #p id
-          #p hydrogen.xyz
-
           angle = Bio::PDB::Utils.angle_from_coords([donor_xyz, hydrogen.xyz, acceptor_xyz])
           h_to_acc_dist = Bio::PDB::Utils.distance(hydrogen.xyz, acceptor_xyz)
 
-          #puts "DISTANCES: "
-          #p don_to_acc_dist
-          #p h_to_acc_dist
-          # abort 'here'
-          
           # I'm not sure why the angle cutoff is not being respected, but we
           # can enforce it right here since we want the angles anyway
           if (180.0 - Bio::PDB::Utils.rad2deg(angle)) <= cutoff_in_degress
